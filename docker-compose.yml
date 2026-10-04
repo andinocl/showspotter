@@ -1,0 +1,28 @@
+# The app joins the Docker network your existing MariaDB container is on.
+# Nothing here names your domain or credentials; those come from .env.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    networks: [db]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    profiles: ["tools"]
+    env_file: .env
+    networks: [db]
+
+networks:
+  db:
+    external: true
+    name: ${MARIADB_DOCKER_NETWORK}
